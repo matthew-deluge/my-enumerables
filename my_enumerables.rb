@@ -4,6 +4,7 @@ hash = {
   :numbera => 1,
   :numberb => 2
 }
+a_proc = Proc.new { |element| element + 1 }
 
 
 module Enumerable
@@ -90,12 +91,38 @@ module Enumerable
       self
     end
   end
-  
-  # combines all elements by applying a binary operation
-  def my_inject
-     
+
+  def my_map_proc(proc)
+    arr = []
+    my_each { |element| arr << proc.call(element) }
+    arr
   end
 
+  def my_map_proc_block(proc = nil)
+    if proc.nil? && block_given?
+      arr = []
+      my_each { |element| arr << yield(element) }
+      arr
+    else
+      my_map_proc(proc)
+    end
+  end
+
+
+  
+  # combines all elements by applying a binary operation
+  def my_inject(value = nil)
+    return value unless block_given?
+
+    if value.nil?
+      value = self[0]
+      self[1..-1].my_each { |element| value = yield(value, element) }
+    else
+      my_each { |element| value = yield(value, element)}
+    end
+    value
+  end
+  
 end
 
 # my_each test
@@ -151,5 +178,24 @@ puts "works with an argument: #{ array.my_count(2) == 1} "
 puts "works with nothing passed: #{ array.my_count == 5} "
 
 puts 'testing my_map...'
-print (array.map { |number| number + 1 })
-print (array.my_map { |number| number +1 })
+p (array.map { |number| number + 1 })
+p (array.my_map { |number| number +1 })
+
+puts 'testing my_inject'
+puts (array.my_inject { |sum, number| sum + number })
+puts (array.my_inject { |sum, number| sum + number }) == 15
+
+def multiply_els(arr)
+  arr.my_inject { |product, element| product*element }
+end
+
+puts multiply_els([2, 4, 5])
+
+puts 'testing my_map_proc'
+p array.my_map_proc(a_proc)
+
+puts 'testing my_map_proc_block'
+p array.my_map_proc_block(a_proc)
+p array.my_map_proc_block(a_proc) { |element| element-1}
+p (array.my_map_proc_block { |element| element -1 })
+
